@@ -1,0 +1,7 @@
+<launch>
+	
+	<node name="miro_teleop" pkg="miro_background" type="miro_teleop.py" args="robot=sim01" />
+	<node name="miro_sensor_to_pos" pkg="miro_background" type="sensor_to_pos.py" args="robot=sim01" />
+	<node name="miro_background_safety" pkg="miro_background" type="background_safety.py" args="robot=sim01" />
+
+</launch>

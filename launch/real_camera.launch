@@ -1,0 +1,20 @@
+<launch>
+
+	<node name="miro_camera" pkg="miro_background" type="miro_camera.py" args="robot=rob01" required="True">
+	  		<param name="pathToYAMLCamCalFile" value="/home/jar78/miro_files/cal/left/ost.yaml" /> 
+	</node>
+	<node name="miro_openface" pkg="miro_background" type="openface_listener.py" args="robot=rob01" required="True"/>
+
+	<node pkg="features_face" type="executable_launcher_op.py" name="executable_launcher_op" required="True">
+  		<param name="pathOpenFace" value="$(find features_face)/OpenFace" /> 
+  		<param name="image_topic" value="/image" />
+  		<param name="viz" value="True" />
+    </node>
+
+    <!-- The nodes for decompressing and republishing the camera streams -->
+    <node pkg="image_transport" type="republish" name="republisherLeft" args="compressed in:=/miro/rob01/platform/caml raw out:=/camera/left/raw" required="True" />
+    <!-- node pkg="image_transport" type="republish" name="republisherRight" args="compressed in:=/miro/rob01/platform/camr raw out:=/camera/right/raw" required="True" /-->
+
+    <node name="display_emotions" pkg="image_view" type="image_view" args="image:=/openface/viz" required="True" />
+
+</launch>
