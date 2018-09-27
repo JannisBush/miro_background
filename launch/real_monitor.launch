@@ -1,13 +1,14 @@
 <launch>
 
 	<!-- The main monitor node. Responsible for the reactions and the monitoring -->
+    <arg name="monitor_emotions" default="False" />
     <node name="monitor" pkg="miro_background" type="monitor_all.py" required="True">
     	<!-- Name of the robot. -->
     	<param name="robot_name" value="rob01" />
     	<!-- How many seconds the node should wait, before it starts to monitor/react -->
     	<param name="start_wait" value="5" />
     	<!-- How many seconds every interval (hour) should have  -->
-    	<param name="interval_time" value="15" />
+    	<param name="interval_time" value="12" />
     	<!-- How many days a "week" consists of  -->
     	<param name="days" value="2" />
     	<!-- How many intervals (hours) a day consists of  -->
@@ -15,11 +16,13 @@
     	<!-- Should the robot display it's demo/autonomous behavior or just react to the stimuli without a lifelike feeling  -->
     	<param name="demo_mode" value="True" />
         <!-- Should the move options of the demo/autonomous behavior be activated? (even if it is False the robot will move) -->
-        <param name="demo_move"  value="True" />
+        <param name="demo_move"  value="False" />
     	<!-- The base name and path of the monitor file  -->
     	<param name="monitor_file" value="$(find miro_background)/miro_monitor" />
     	<!-- The minimal confidence score that a keypoint of posenet gets accepted (important for HandsUp etc.)  -->
     	<param name="min_part_conf" value="0.4" />
+        <!-- Should OpenFace Emotion Analysis be used? If it fails to install, set to false -->
+        <param name="monitor_emotions" value="$(arg monitor_emotions)" />
 	</node>
 
 
@@ -78,19 +81,21 @@
         <param name="nms_radius" value="20" />
     </node>
 
- 
-    <!-- The node resposible for the Face Emotion Recogntion using OpenFace -->
-	<node pkg="features_face" type="executable_launcher_op.py" name="executable_launcher_op" required="True">
-		<!-- Location of OpenFace -->
-  		<param name="pathOpenFace" value="$(find features_face)/OpenFace" /> 
-  		<!-- The input image topic -->
-  		<param name="image_topic" value="/image" />
-  		<!-- Should the output be visualized? (at /openface/viz) -->
-  		<param name="viz" value="False" />
-    </node>
-    <!-- Node to republish the camera stream in the correct way for OpenFace -->
-    <node name="miro_camera" pkg="miro_background" type="miro_camera.py" args="robot=rob01" required="True">
-	  		<param name="pathToYAMLCamCalFile" value="$(find miro_background)/ost.yaml" /> 
-	</node>
+    <!-- Only call OpenFace, if the flag was set -->
+    <group if="$(arg monitor_emotions)">
+        <!-- The node resposible for the Face Emotion Recogntion using OpenFace -->
+    	<node pkg="features_face" type="executable_launcher_op.py" name="executable_launcher_op" required="True">
+    		<!-- Location of OpenFace -->
+      		<param name="pathOpenFace" value="$(find features_face)/OpenFace" /> 
+      		<!-- The input image topic -->
+      		<param name="image_topic" value="/image" />
+      		<!-- Should the output be visualized? (at /openface/viz) -->
+      		<param name="viz" value="False" />
+        </node>
+        <!-- Node to republish the camera stream in the correct way for OpenFace -->
+        <node name="miro_camera" pkg="miro_background" type="miro_camera.py" args="robot=rob01" required="True">
+    	  		<param name="pathToYAMLCamCalFile" value="$(find miro_background)/ost.yaml" /> 
+    	</node>
+    </group>
 
 </launch>

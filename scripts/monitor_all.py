@@ -80,8 +80,11 @@ class monitor:
         self.interval_time = rospy.get_param("~interval_time")
         self.days = rospy.get_param("~days")
         self.hours_per_day = rospy.get_param("~intervals_per_day")
-        self.monitor_file = rospy.get_param("~monitor_file") + "_" + str(self.days) + "_" + str(self.hours_per_day) + "_" + str(self.interval_time) + ".log"
+        self.monitor_emotions = rospy.get_param("~monitor_emotions")
+        #self.monitor_file = rospy.get_param("~monitor_file") + "_" + str(self.days) + "_" + str(self.hours_per_day) + "_" + str(self.interval_time) + "_" + str(self.monitor_emotions) + ".log"
+        self.monitor_file = "%s_%s_%s_%s_%s.log" % (rospy.get_param("~monitor_file"), str(self.days), str(self.hours_per_day), str(self.interval_time), str(self.monitor_emotions))
         self.min_part_conf = rospy.get_param("~min_part_conf")
+        self.monitor_emotions = rospy.get_param("~monitor_emotions")
 
         # Prepare the dictionaries for the log file
         # There are 5 different categories of things MiRo monitors + one uncategorized category
@@ -92,7 +95,7 @@ class monitor:
          "fear": [], "anger": [], "disgust": [], "contempt": []}
         self.sound_template = {"beep": [], "beep_beep": [], "clap": []}
         self.pose_template = {"hands_up": [], "high_knee_left": [], "high_knee_right": []}
-        self.extra_template = {"face_on_floor": []}
+        self.extra_template = {"face_on_floor": [], "light": []}
         # The event template consists of the 5+1 categories (deepcopy, to create new lists)
         self.event_template = {"object/toys": copy.deepcopy(self.toy_template), "touch": copy.deepcopy(self.touch_template),
          "face/emotions": copy.deepcopy(self.emotion_template), "sounds": copy.deepcopy(self.sound_template),
@@ -238,7 +241,8 @@ class monitor:
         # Face on the floor
         self.face_sub = rospy.Subscriber("/faceCoord", Int32MultiArray, self.callback_faces)
         # Face emotions
-        self.face_sub = rospy.Subscriber("/faces", Faces, self.callback_emotions)
+        if self.monitor_emotions:
+            self.face_sub = rospy.Subscriber("/faces", Faces, self.callback_emotions)
         # Platform sensors (used for Touch)
         self.sub_platform_sensors = rospy.Subscriber(topic_root + "/platform/sensors", platform_sensors, self.callback_sensors)
         # Poses (PoseNet Human Pose Analysis) -> HandsUp and HighKnees
@@ -463,10 +467,6 @@ class monitor:
 
     def callback_state(self, state):
         """Listens to the platform state message."""
-        # If the program is not active yet, activate it 
-        if not self.active:
-            self.active = True
-
         if state.sleep.wakefulness < 0.1:
             self.awake = False
         else:
@@ -474,14 +474,15 @@ class monitor:
 
         # Check if the next interval has started 
         if rospy.Time.now().to_sec() > self.start_time + (self.current_day * self.hours_per_day + self.current_hour + 1) * self.interval_time:
+
+            # Deactivate logging while recording takes place (against lost update, dirty read, etc.)
+            self.active = False
          
             # Which pattern was actually observed?
             # Was there a face on the floor? (highest priority)
-            #if self.face_on_floor > 0:
             if self.counter_dict["face_on_floor"] > 0:
                 observed_pattern = "face_on_floor"
             # Were happy or sad faces present? (middle priority)
-            #elif (self.happiness + self.sadness) > 0:
             elif (self.counter_dict["happiness"] + self.counter_dict["sadness"]) > 0:
                 #if self.happiness > self.sadness:
                 if self.counter_dict["happiness"] > self.counter_dict["sadness"]:
@@ -489,7 +490,6 @@ class monitor:
                 else:
                     observed_pattern = "sad_face"
             # Was miro touched? (lowest priorioty)
-            #elif (self.body_touch + self.head_touch) > 0:
             elif (self.counter_dict["body_touch"] + self.counter_dict["head_touch"]) > 0:
                 #if self.body_touch > self.head_touch:
                 if self.counter_dict["body_touch"] > self.counter_dict["head_touch"]:
@@ -532,19 +532,30 @@ class monitor:
                 rospy.signal_shutdown("one week passed")
 
             # Predict pattern for the next period
-            self.predict_next_pattern()       
+            self.predict_next_pattern()     
+        
+        #activate logging (again)
+        self.active = True  
 
     def callback_sensors(self, sensors):
         """Listen to the platform/sensor messages to detect touch."""
+        # Do nothing if the monitor is not yet active
+        if not self.active:
+            return
         # Increment head and body touch if touched
         self.counter_dict["head_touch"] += np.sum(np.array(bytearray(sensors.touch_head)).astype(np.float))
         self.counter_dict["body_touch"] += np.sum(np.array(bytearray(sensors.touch_body)).astype(np.float))
+        # Increment counters for the light sensors
+        self.counter_dict["light"] += np.sum(np.array(bytearray(sensors.light)).astype(np.float))
         # Save the current state of the joints and eyelids (to not change it)
         self.joint_state = sensors.joint_state
         self.eyelid_closure = sensors.eyelid_closure
 
     def callback_poses(self, pose_msg):
         """Listens to poses messages to detect human poses (e.g. HandsUp)."""
+        # Do nothing if the monitor is not yet active
+        if not self.active:
+            return
         # Detect the human poses for all incoming pose messages
         for i in range(len(pose_msg.poses)):
             keypoint_dict = {}
@@ -611,6 +622,9 @@ class monitor:
 
     def callback_mics(self, data):
         """Listens to the microphones to detect specific sounds."""
+        # Do nothing if the monitor is not yet active
+        if not self.active:
+            return
         # Forget the oldest message
         self.mic_array_1 = np.roll(self.mic_array_1, -2000)
         self.mic_array_2 = np.roll(self.mic_array_2, -2000)
@@ -666,6 +680,9 @@ class monitor:
 
     def callback_toys(self, object_side):
         """Listen to the toy messages to see what toy was detected with which camera."""
+        # Do nothing if the monitor is not yet active
+        if not self.active:
+            return
         # Increment the count for this object
         self.counter_dict[object_side.object] += 1
         # toys dictionary
