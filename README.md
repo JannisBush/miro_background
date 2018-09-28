@@ -13,7 +13,7 @@
 	- additional: change a lot of paths etc.
 - my version of image_recognition Branch MiRo [git](https://github.com/JannisBush/image_recognition/tree/miro)
 	- follow installation instructions there
-	- additional: train with new images to recognize your objects
+	- optional: train with new images to recognize your objects
 - my version of ros_posenet  [git](https://github.com/JannisBush/ros_posenet)
 	- follow installation instructions there
 - my version of teleop_twist_keyboard [git](https://github.com/JannisBush/teleop_twist_keyboard_MiRo)
@@ -36,6 +36,7 @@
 		- feature_faces/exectuable_launcher.py (OpenFace)
 		- 1x image_transport/republish
 		- image_view/image_view
+		- additional: use check_actions.sh or check_emotions.sh to control the output
 	- real.launch: old idea of some background safety nodes including teleop
 		- miro_background/miro_teleop.py
 		- miro_background/sensor_to_pos.py
@@ -57,6 +58,7 @@
 	- (robot=sim01|rob01 follow_type=mics|core), sound_follow_1_2.py: two options of following a sound source, one using the spatial interface the other using just the crosscorrelation between the two microphones (used in real_monitor.launch/monitor_all.py)
 
 **Other Interesting software:**
+- ORB_SLAM2_ROS
 - ratslam_ros (did not work with Miro?)
 - RASL-MIRO (add closing parenthesis in flags.py, make mic_test.py easier, commented out import of sound interface in sound_test.py)
 - miroDetection (changes in miroDetectorROS.py to make it work, e.g. add rospy.spin())
