@@ -81,7 +81,6 @@ class monitor:
         self.days = rospy.get_param("~days")
         self.hours_per_day = rospy.get_param("~intervals_per_day")
         self.monitor_emotions = rospy.get_param("~monitor_emotions")
-        #self.monitor_file = rospy.get_param("~monitor_file") + "_" + str(self.days) + "_" + str(self.hours_per_day) + "_" + str(self.interval_time) + "_" + str(self.monitor_emotions) + ".log"
         self.monitor_file = "%s_%s_%s_%s_%s.log" % (rospy.get_param("~monitor_file"), str(self.days), str(self.hours_per_day), str(self.interval_time), str(self.monitor_emotions))
         self.min_part_conf = rospy.get_param("~min_part_conf")
         self.monitor_emotions = rospy.get_param("~monitor_emotions")
@@ -151,7 +150,9 @@ class monitor:
 
         # Set the dict to map from patterns to states
         self.pattern_to_state_dict = {"nothing": "Sleep", "face_on_floor": "Angry_disturbed", "happy_face": "Happy_active",
-         "body_touch": "Happy_active", "head_touch": "Happy_calm", "sad_face": "Angry_calm", "neutral": "Neutral"}
+         "body_touch": "Happy_active", "head_touch": "Happy_calm", "sad_face": "Angry_calm", "liked": "Happy_active",
+         "disliked": "Angry_disturbed", "strange1": "Neutral", "strange2": "Angry_calm", "sound": "Angry_disturbed",
+         "hands_up": "Happy_active", "neutral": "Neutral"}
         # Set the dict to map from states to /core/control messages 
         self.state_dict = {"Neutral": [0.5, 0.5, 0.5, 0.5, 1.0, 0.0], "Angry_disturbed": [0.0, 1.0, 0.0, 1.0, 1.0, 0.0], 
         "Angry_calm": [0.0, 0.0, 0.0, 0.0, 1.0, 0.0], "Happy_active": [1.0, 1.0, 1.0, 1.0, 1.0, 0.0],
@@ -478,18 +479,37 @@ class monitor:
             # Deactivate logging while recording takes place (against lost update, dirty read, etc.)
             self.active = False
          
+            # Get the corresponding event dict
+            current_event_dict = self.current_hour_dict["events"]
+            # Log all basic units
+            for content_name in self.counter_dict:
+                for topic_name in current_event_dict:
+                    if content_name in current_event_dict[topic_name]:
+                        current_event_dict[topic_name][content_name].append(self.counter_dict[content_name])
+
+            # toy with the highest number
+            max_toy = max(current_event_dict["object/toys"], key=lambda k: current_event_dict["object/toys"][k])
             # Which pattern was actually observed?
-            # Was there a face on the floor? (highest priority)
+            # Was there a face on the floor? (highest priority 1)
             if self.counter_dict["face_on_floor"] > 0:
                 observed_pattern = "face_on_floor"
-            # Were happy or sad faces present? (middle priority)
+            # Were happy or sad faces present? (middle priority 2)
             elif (self.counter_dict["happiness"] + self.counter_dict["sadness"]) > 0:
                 #if self.happiness > self.sadness:
                 if self.counter_dict["happiness"] > self.counter_dict["sadness"]:
                     observed_pattern = "happy_face"
                 else:
                     observed_pattern = "sad_face"
-            # Was miro touched? (lowest priorioty)
+            # Were toys present? (middle priority 3)
+            elif (current_event_dict["object/toys"][max_toy][-1] > 0):
+                observed_pattern = self.toys_dict[max_toy]
+            # Were sounds present (middle priority 4)
+            elif (any(self.counter_dict[k] > 0 for k in self.sound_template)):
+                observed_pattern = "sound"
+            # HandsUP? (middle priortiy 5)
+            elif self.counter_dict["hands_up"] > 0:
+                observed_pattern = "hands_up"
+            # Was miro touched? (lowest priorioty 6)
             elif (self.counter_dict["body_touch"] + self.counter_dict["head_touch"]) > 0:
                 #if self.body_touch > self.head_touch:
                 if self.counter_dict["body_touch"] > self.counter_dict["head_touch"]:
@@ -510,13 +530,7 @@ class monitor:
                 # do something
                 pass
                 
-            # Get the corresponding event dict
-            current_event_dict = self.current_hour_dict["events"]
-            # Log all basic units
-            for content_name in self.counter_dict:
-                for topic_name in current_event_dict:
-                    if content_name in current_event_dict[topic_name]:
-                        current_event_dict[topic_name][content_name].append(self.counter_dict[content_name])
+
             # Reset all counters
             for k in self.counter_dict:
                 self.counter_dict[k] = 0
@@ -686,13 +700,13 @@ class monitor:
         # Increment the count for this object
         self.counter_dict[object_side.object] += 1
         # toys dictionary
-        toys_dict = {"ball_g": "liked", "ball_r": "disliked", "ball_b": "strange1", "ball_y": "strange1", "ball_rb": "liked",
+        self.toys_dict = {"ball_g": "liked", "ball_r": "disliked", "ball_b": "strange1", "ball_y": "strange1", "ball_rb": "liked",
         "moto5": "liked", "screwdriver": "disliked", "pen": "strange2", "purse": "strange1", "ribena": "strange2"}
         # reaction dict, (linear.x, angular.z)
         reaction_dict = {"liked": (0.15, 0), "disliked": (-0.15, 0), "strange1": (0, 0.5), "strange2": (0, -0.5)}
         # move forward, backwards, turn depending on the object
         reaction = Twist()
-        move_tuple = reaction_dict[toys_dict[object_side.object]]
+        move_tuple = reaction_dict[self.toys_dict[object_side.object]]
         reaction.linear.x = move_tuple[0] + np.random.normal(0.0, 0.05)
         # turn to strange1 obejcts, turn away from strange2 objects
         if object_side.side == "left":
