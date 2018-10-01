@@ -22,8 +22,10 @@
 	- now you should be able to run all of the appli
 - **Optional:**
 - my version of face_detection (changes in config, + compatible with OpenCV3 instead of 2) [git](https://github.com/JannisBush/face_detection)
-	- follow installation instructions there
-	- additional: change path to dlib in CMakeLists.txt!
+	- if you have not yet installed/downloaded dlib, download it [here](http://dlib.net)
+	- `cd ~/catkin_ws/src` and `git clone https://github.com/JannisBush/face_detection.git`
+	- change the path in line 131 of CMakeLists.txt to where you downloaded dlib
+	- `cd ~/catkin_ws` and `catkin_make`
 - my version of features_face including OpenFace [git](https://github.com/JannisBush/features_face)
 	- TODO: create installation instructions
 	- additional: change a lot of paths etc.
