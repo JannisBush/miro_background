@@ -2,7 +2,7 @@
 
 	<!-- The main monitor node. Responsible for the reactions and the monitoring -->
     <arg name="monitor_emotions" default="False" />
-    <argm name="alert_faces" default="False" />
+    <arg name="alert_faces" default="False" />
     <node name="monitor" pkg="miro_background" type="monitor_all.py" required="True">
     	<!-- Name of the robot. -->
     	<param name="robot_name" value="rob01" />
