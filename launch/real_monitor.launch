@@ -28,7 +28,7 @@
 
 
     <!-- The face safety node. Responsible for the detection of faces on the floor. Only start if the argument is set.-->
-    <group if="$(arg alert_face)">
+    <group if="$(arg alert_faces)">
     	<node name="face_safety" pkg="miro_background" type="face_safety.py" args="robot=rob01" required="True"/>
     	<arg name="face_cascade_name_0"  default="$(find face_detection)/include/face_detection/HaarCascades/haarcascade_frontalface_alt.xml" />
     	<arg name="face_cascade_name_1"  default="$(find face_detection)/include/face_detection//HaarCascades/haarcascade_frontalface_alt2.xml" />
