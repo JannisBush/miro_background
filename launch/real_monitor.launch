@@ -2,13 +2,14 @@
 
 	<!-- The main monitor node. Responsible for the reactions and the monitoring -->
     <arg name="monitor_emotions" default="False" />
+    <argm name="alert_faces" default="False" />
     <node name="monitor" pkg="miro_background" type="monitor_all.py" required="True">
     	<!-- Name of the robot. -->
     	<param name="robot_name" value="rob01" />
     	<!-- How many seconds the node should wait, before it starts to monitor/react -->
     	<param name="start_wait" value="5" />
     	<!-- How many seconds every interval (hour) should have  -->
-    	<param name="interval_time" value="12" />
+    	<param name="interval_time" value="20" />
     	<!-- How many days a "week" consists of  -->
     	<param name="days" value="2" />
     	<!-- How many intervals (hours) a day consists of  -->
@@ -26,20 +27,22 @@
 	</node>
 
 
-    <!-- The face safety node. Responsible for the detection of faces on the floor. -->
-	<node name="face_safety" pkg="miro_background" type="face_safety.py" args="robot=rob01" required="True"/>
-	<arg name="face_cascade_name_0"  default="$(find face_detection)/include/face_detection/HaarCascades/haarcascade_frontalface_alt.xml" />
-	<arg name="face_cascade_name_1"  default="$(find face_detection)/include/face_detection//HaarCascades/haarcascade_frontalface_alt2.xml" />
-	<arg name="face_cascade_name_2"  default="$(find face_detection)/include/face_detection//HaarCascades/haarcascade_frontalface_alt_tree.xml" />
-	<arg name="face_cascade_name_3"  default="$(find face_detection)/include/face_detection//HaarCascades/haarcascade_frontalface_default.xml" />
-	<arg name="face_cascade_name_4"  default="$(find face_detection)/include/face_detection/lbpCascades/lbpcascade_frontalface.xml" />
-	<node pkg="face_detection" type="face_detection_dlib" name="face_detection_dlib" required="True"
-	    args="$(arg face_cascade_name_0)
-	    $(arg face_cascade_name_1)
-	    $(arg face_cascade_name_2)
-	    $(arg face_cascade_name_3)
-	    $(arg face_cascade_name_4)"
-	    output="screen"/>
+    <!-- The face safety node. Responsible for the detection of faces on the floor. Only start if the argument is set.-->
+    <group if="$(arg alert_face)">
+    	<node name="face_safety" pkg="miro_background" type="face_safety.py" args="robot=rob01" required="True"/>
+    	<arg name="face_cascade_name_0"  default="$(find face_detection)/include/face_detection/HaarCascades/haarcascade_frontalface_alt.xml" />
+    	<arg name="face_cascade_name_1"  default="$(find face_detection)/include/face_detection//HaarCascades/haarcascade_frontalface_alt2.xml" />
+    	<arg name="face_cascade_name_2"  default="$(find face_detection)/include/face_detection//HaarCascades/haarcascade_frontalface_alt_tree.xml" />
+    	<arg name="face_cascade_name_3"  default="$(find face_detection)/include/face_detection//HaarCascades/haarcascade_frontalface_default.xml" />
+    	<arg name="face_cascade_name_4"  default="$(find face_detection)/include/face_detection/lbpCascades/lbpcascade_frontalface.xml" />
+    	<node pkg="face_detection" type="face_detection_dlib" name="face_detection_dlib" required="True"
+    	    args="$(arg face_cascade_name_0)
+    	    $(arg face_cascade_name_1)
+    	    $(arg face_cascade_name_2)
+    	    $(arg face_cascade_name_3)
+    	    $(arg face_cascade_name_4)"
+    	    output="screen"/>
+    </group>
 
 	
 	<!-- The client and server for the toy/object recognition. Specify the path to the grahp and the labels here. -->
