@@ -261,5 +261,5 @@ The main application monitors many different features, which MiRo can detect, re
 - A nice improvment for the future would be to produce a labelled dataset and replace the mapping from observations to names/labels to internal states by some classification from observations to labels
 
 ## Additional Information
-- I also tested mapping using another robot (TurlteBot 3 Burger). See [here](relative_path) for documentation.
-- I also tested, used, created some other software and read many papers. See [here](relative_path) for describtions, links and instructions.
+- I also tested mapping using another robot (TurlteBot 3 Burger). See [here](./other_software.md) for documentation.
+- I also tested, used, created some other software and read many papers. See [here](./turtleBot3_Mapping.md) for describtions, links and instructions.
