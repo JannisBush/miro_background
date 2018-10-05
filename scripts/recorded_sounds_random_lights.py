@@ -79,6 +79,10 @@ def main(topic_root):
     rate = rospy.Rate(20)
     try:
         while not rospy.is_shutdown():
+            # If uncommented sounds in P1 and P2 won't play anymore! bug
+            # x = UInt16MultiArray()
+            # x.data = np.random.randint(0, 256, size=18)
+            # enc.light_pub.publish(x)
             rate.sleep()
     except KeyboardInterrupt:
         print("Shutting down")
